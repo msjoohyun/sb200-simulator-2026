@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Startup Battlefield 200 Application Simulator 2026</title>
+  
+  <!-- jsPDF for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --shinhan-blue: #0055FF;
+      --shinhan-dark: #003DA5;
+      --text: #1A1D23;
+      --text-muted: #6B7280;
+      --bg: #F9FAFB;
+      --surface: #FFFFFF;
+      --border: #E5E7EB;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 15px;
+    }
+    
+    /* Header */
+    .header {
+      background: var(--shinhan-blue);
+      color: white;
+      padding: 20px 20px 24px;
+      box-shadow: 0 2px 8px rgba(0, 85, 255, 0.2);
+    }
+    
+    .header-logo {
+      height: 36px;
+      width: auto;
+      display: block;
+      margin-bottom: 16px;
+    }
+    
+    .header-content {
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: clamp(20px, 4vw, 28px);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    @media (max-width: 768px) {
+      .header-logo {
+        height: 32px;
+      }
+    }
+    
+    /* Container */
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+    
+    /* Notice Box */
+    .notice {
+      background: #FEF3C7;
+      border-left: 4px solid var(--warning);
+      padding: 16px;
+      margin-bottom: 32px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    
+    .notice strong {
+      color: var(--text);
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    /* Section */
+    .section {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-header {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--shinhan-blue);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--shinhan-blue);
+    }
+    
+    /* Form Group */
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    
+    .required {
+      color: var(--danger);
+      margin-left: 2px;
+    }
+    
+    .helper-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+    
+    .helper-text.tip {
+      background: #EFF6FF;
+      border-left: 3px solid var(--shinhan-blue);
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    
+    /* Input Fields */
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="date"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+      background: var(--surface);
+    }
+    
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--shinhan-blue);
+      box-shadow: 0 0 0 3px rgba(0, 85, 255, 0.1);
+    }
+    
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+    
+    /* Warning Box */
+    .warning-box {
+      background: #FEE2E2;
+      border: 1px solid var(--danger);
+      color: #991B1B;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .warning-box.show {
+      display: block;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Character Counter */
+    .char-counter {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 4px;
+    }
+    
+    .char-counter.over-limit {
+      color: var(--danger);
+      font-weight: 600;
+    }
+    
+    /* Submit Button */
+    .submit-section {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .btn-submit {
+      background: var(--shinhan-blue);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 85, 255, 0.3);
+    }
+    
+    .btn-submit:hover {
+      background: var(--shinhan-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 85, 255, 0.4);
+    }
+    
+    .btn-submit:disabled {
+      background: var(--border);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    /* Loading */
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 80px 20px;
+    }
+    
+    .loading.show {
+      display: block;
+    }
+    
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 5px solid var(--border);
+      border-top-color: var(--shinhan-blue);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 24px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    
+    .loading p {
+      font-size: 15px;
+      color: var(--text-muted);
+    }
+    
+    /* Result */
+    .result {
+      display: none;
+    }
+    
+    .result.show {
+      display: block;
+    }
+    
+    .result-header {
+      background: linear-gradient(135deg, var(--shinhan-blue) 0%, var(--shinhan-dark) 100%);
+      color: white;
+      padding: 40px 24px;
+      border-radius: 16px;
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    
+    .result-score {
+      font-size: 64px;
+      font-weight: 700;
+      margin: 16px 0;
+    }
+    
+    .result-probability {
+      font-size: 18px;
+      opacity: 0.95;
+    }
+    
+    .score-breakdown {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .score-item {
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .score-item:last-child {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+    
+    .score-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .score-item-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .score-item-value {
+      font-weight: 700;
+      color: var(--shinhan-blue);
+      font-size: 18px;
+    }
+    
+    .score-rationale {
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    
+    .score-improvement {
+      background: #EFF6FF;
+      border-left: 3px solid var(--shinhan-blue);
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .score-improvement::before {
+      content: "💡 ";
+    }
+    
+    .btn-download {
+      background: var(--shinhan-blue);
+      color: white;
+      border: none;
+      padding: 14px 40px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-top: 24px;
+    }
+    
+    .btn-download:hover {
+      background: var(--shinhan-dark);
+    }
+    
+    .btn-restart {
+      background: var(--text-muted);
+      color: white;
+      border: none;
+      padding: 14px 40px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-left: 12px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container {
+        padding: 16px 12px;
+      }
+      
+      .section {
+        padding: 20px 16px;
+      }
+      
+      .result-score {
+        font-size: 48px;
+      }
+      
+      .btn-download,
+      .btn-restart {
+        display: block;
+        width: 100%;
+        margin: 8px 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <!-- 로고 이미지: logo.png 파일을 HTML과 같은 폴더에 업로드하세요 -->
+    <img src="logo.png" alt="Logo" class="header-logo">
+    
+    <div class="header-content">
+      <h1>🚀 Startup Battlefield 200 Application Simulator</h1>
+      <p>2026년 서류심사 통과 가능성 평가</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Form Container -->
+    <div id="formContainer">
+      <div class="notice">
+        <strong>⚠️ 시뮬레이터 안내</strong>
+        실제 Startup Battlefield 200 심사는 신청서 내용과 제출한 영상(Product Demo, Founder Video)을 모두 검토하여 진행됩니다.<br>
+        본 시뮬레이터는 <strong>신청서 텍스트 내용만을 기반</strong>으로 평가하므로, 영상은 보유 여부만 확인합니다.<br>
+        평가 결과는 참고용이며, 실제 선정 결과와 다를 수 있습니다.
+      </div>
+
+      <form id="applicationForm">
+        <!-- Section 1: POC -->
+        <div class="section">
+          <div class="section-header">Section 1. Application Point of Contact</div>
+          <p class="helper-text" style="margin-bottom: 20px;">신청서 관련 문의 및 후속 연락을 받을 담당자 정보를 입력해주세요.</p>
+          
+          <div class="form-group">
+            <label>POC Company Name <span class="required">*</span></label>
+            <input type="text" id="pocCompany" required>
+          </div>
+          
+          <div class="form-group">
+            <label>POC First Name <span class="required">*</span></label>
+            <input type="text" id="pocFirstName" required>
+          </div>
+          
+          <div class="form-group">
+            <label>POC Last Name <span class="required">*</span></label>
+            <input type="text" id="pocLastName" required>
+          </div>
+          
+          <div class="form-group">
+            <label>POC Phone Number <span class="required">*</span></label>
+            <input type="text" id="pocPhone" required placeholder="+82 10-1234-5678">
+          </div>
+          
+          <div class="form-group">
+            <label>POC Email Address <span class="required">*</span></label>
+            <input type="email" id="pocEmail" required>
+          </div>
+          
+          <div class="form-group">
+            <label>CC Email Address</label>
+            <input type="email" id="ccEmail">
+            <div class="helper-text">참조로 받을 이메일 주소 (선택사항)</div>
+          </div>
+        </div>
+
+        <!-- Section 2: Company Information -->
+        <div class="section">
+          <div class="section-header">Section 2. Company Information</div>
+          
+          <div class="form-group">
+            <label>Startup Company Name <span class="required">*</span></label>
+            <input type="text" id="companyName" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Website URL <span class="required">*</span></label>
+            <input type="url" id="website" required placeholder="https://">
+          </div>
+          
+          <div class="form-group">
+            <label>Pitchbook/Crunchbase URL</label>
+            <input type="url" id="pitchbookUrl" placeholder="https://">
+          </div>
+          
+          <div class="form-group">
+            <label>Date of Incorporation <span class="required">*</span></label>
+            <input type="date" id="incorporation" required>
+          </div>
+          
+          <div class="form-group">
+            <label>HQ Geographic Region <span class="required">*</span></label>
+            <select id="hqRegion" required>
+              <option value="">선택</option>
+              <option value="Asia">Asia</option>
+              <option value="North America">North America</option>
+              <option value="Europe">Europe</option>
+              <option value="South America">South America</option>
+              <option value="Africa">Africa</option>
+              <option value="Oceania">Oceania</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>HQ Country <span class="required">*</span></label>
+            <input type="text" id="country" required>
+          </div>
+          
+          <div class="form-group">
+            <label>HQ City <span class="required">*</span></label>
+            <input type="text" id="city" required>
+          </div>
+        </div>
+
+        <!-- Section 3: Product Details -->
+        <div class="section">
+          <div class="section-header">Section 3. Product Details</div>
+          
+          <div class="form-group">
+            <label>What developmental stage best aligns with your product? <span class="required">*</span></label>
+            <select id="stage" required>
+              <option value="">선택</option>
+              <option value="Idea">Idea Stage</option>
+              <option value="Pre-Launch">Pre-Launch (MVP in development)</option>
+              <option value="Post-Launch">Post-Launch (product is live)</option>
+              <option value="Growth">Growth Stage (scaling)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Company Value Proposition Statement <span class="required">*</span></label>
+            <textarea id="valueProposition" required maxlength="200"></textarea>
+            <div class="char-counter" id="vpCounter">0 / 200 characters</div>
+            <div class="warning-box" id="vpWarning">⚠️ 200자를 초과했습니다</div>
+            <div class="helper-text">최대 200자. 귀사의 핵심 가치를 간결하게 표현해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>What core problem are you addressing? <span class="required">*</span></label>
+            <textarea id="problem" required></textarea>
+            <div class="helper-text">해결하고자 하는 핵심 문제를 구체적으로 설명해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>What is your solution to this core problem? <span class="required">*</span></label>
+            <textarea id="solution" required></textarea>
+            <div class="helper-text">문제에 대한 귀사의 솔루션을 명확히 설명해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>How is your solution unique and protectable? <span class="required">*</span></label>
+            <textarea id="differentiation" required></textarea>
+            <div class="helper-text">차별점과 보호 가능한 경쟁우위(moat)를 설명해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Who is your ideal customer? <span class="required">*</span></label>
+            <textarea id="customer" required></textarea>
+            <div class="helper-text">타겟 고객을 구체적으로 정의해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>What is the primary use case for your product? <span class="required">*</span></label>
+            <textarea id="useCase" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Do you hold a patent to your IP? <span class="required">*</span></label>
+            <select id="patent" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Patent pending">Patent pending</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="patentLinkGroup" style="display: none;">
+            <label>Please provide links to any applicable patents or relevant compliance certifications. <span class="required">*</span></label>
+            <input type="url" id="patentLink" placeholder="https://">
+          </div>
+          
+          <div class="form-group">
+            <label>How do you distribute your product? <span class="required">*</span></label>
+            <textarea id="distribution" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Will you be potentially launching a new product at Disrupt? <span class="required">*</span></label>
+            <select id="newProduct" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="newProductDescGroup" style="display: none;">
+            <label>What will you be launching at Disrupt? <span class="required">*</span></label>
+            <textarea id="newProductDesc"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>What technology is your product primarily based on? <span class="required">*</span></label>
+            <select id="technology" required>
+              <option value="">선택</option>
+              <option value="AI & ML">Artificial Intelligence (AI) & Machine Learning (ML)</option>
+              <option value="Blockchain">Blockchain</option>
+              <option value="IoT">Internet of Things (IoT)</option>
+              <option value="SaaS">Software as a Service (SaaS)</option>
+              <option value="Hardware">Hardware</option>
+              <option value="Biotech">Biotechnology</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="aiDetailsGroup" style="display: none;">
+            <label>What proprietary data, models or techniques separate your AI approach from others in the market?</label>
+            <textarea id="aiDetails"></textarea>
+          </div>
+        </div>
+
+        <!-- Section 4: Product Demo -->
+        <div class="section">
+          <div class="section-header">Section 4. Product Demo</div>
+          
+          <div class="form-group">
+            <label>Product Video Demo URL (Max 2 Minutes) <span class="required">*</span></label>
+            <input type="url" id="demoUrl" required placeholder="https://">
+            <div class="helper-text tip">
+              <strong>💡 영상 제작 팁:</strong><br>
+              • 2분 이내 제품 작동 영상 (스크린 녹화 또는 휴대폰 촬영 가능)<br>
+              • 음성 설명으로 주요 기능 설명 포함<br>
+              • 마케팅용 고품질 영상 불필요 - 제품이 실제로 작동함을 증명하는 것이 목적<br>
+              • 비밀번호 없이 링크만으로 접근 가능하도록 설정<br>
+              • http:// 또는 https:// 포함 필수
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Founder Video Pitch URL (Max 1 Minute) <span class="required">*</span></label>
+            <input type="url" id="founderUrl" required placeholder="https://">
+            <div class="helper-text tip">
+              <strong>💡 영상 제작 팁:</strong><br>
+              • 1분 이내 창업자 소개 영상 (Demo 영상과 별도)<br>
+              • 창업자 본인, 팀, 제품의 독창성과 임팩트를 소개<br>
+              • 스크린 녹화 또는 휴대폰 촬영 가능<br>
+              • 마케팅용 고품질 영상 불필요<br>
+              • 비밀번호 없이 링크만으로 접근 가능하도록 설정<br>
+              • http:// 또는 https:// 포함 필수
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 5: Market Details -->
+        <div class="section">
+          <div class="section-header">Section 5. Market Details</div>
+          
+          <div class="form-group">
+            <label>What is your total addressable market (TAM)? <span class="required">*</span></label>
+            <input type="text" id="tam" required placeholder="예: $500M">
+            <div class="helper-text">USD 단위로 입력해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Please provide a written explanation of how you calculate your TAM <span class="required">*</span></label>
+            <textarea id="tamLogic" required></textarea>
+            <div class="helper-text">계산 논리를 명확히 설명해주세요. 예: "5M users × $100/year = $500M"</div>
+            <div class="warning-box" id="tamWarning">💡 TAM 계산 근거가 구체적이지 않습니다. Bottom-up 방식으로 가정과 계산식을 포함해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Who are your biggest competitors? <span class="required">*</span></label>
+            <textarea id="competitors" required></textarea>
+            <div class="warning-box" id="competitorsWarning">🚨 TC 공식 가이드: "경쟁자 없음"이라고 답변하는 기업은 자동으로 낮은 우선순위로 분류됩니다.</div>
+            <div class="helper-text">글로벌 경쟁사를 포함하여 구체적으로 나열해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>What primary industry does your product align with? <span class="required">*</span></label>
+            <select id="industry" required>
+              <option value="">선택</option>
+              <option value="AI/ML">AI & Machine Learning</option>
+              <option value="Enterprise SaaS">Enterprise SaaS</option>
+              <option value="Consumer">Consumer Tech</option>
+              <option value="Fintech">Fintech</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Climate">Climate Tech</option>
+              <option value="Security">Cybersecurity</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section 6: Traction -->
+        <div class="section">
+          <div class="section-header">Section 6. Traction</div>
+          
+          <div class="form-group">
+            <label>What is the main Key Performance Indicator (should be a number value) that you track and how has it grown in the last few months? <span class="required">*</span></label>
+            <textarea id="kpi" required></textarea>
+            <div class="helper-text">구체적인 수치와 성장률을 포함해주세요. 예: "MRR $50K → $80K (60% growth in 3 months)"</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Please list some of your customers, if applicable <span class="required">*</span></label>
+            <textarea id="customers" required></textarea>
+            <div class="warning-box" id="customersWarning">💡 글로벌 고객사를 포함하면 평가에 유리합니다.</div>
+            <div class="helper-text">주요 고객사를 나열해주세요. 고객사가 없다면 "Pre-revenue" 또는 "Beta users: N명"으로 작성</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Please describe your traction so far <span class="required">*</span></label>
+            <textarea id="traction" required></textarea>
+            <div class="helper-text">지금까지의 트랙션을 구체적으로 설명해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Summarize any press/media coverage your startup has received <span class="required">*</span></label>
+            <textarea id="press" required></textarea>
+            <div class="helper-text">언론 보도 이력을 요약해주세요. 없다면 "No press coverage yet"으로 작성</div>
+          </div>
+          
+          <div class="form-group">
+            <label>What is newsworthy about your product, team and/or founding story? <span class="required">*</span></label>
+            <textarea id="newsworthy" required></textarea>
+            <div class="helper-text">기사화할 만한 스토리를 설명해주세요. TechCrunch는 저널리스트가 심사합니다.</div>
+          </div>
+        </div>
+
+        <!-- Section 7: Financial Information -->
+        <div class="section">
+          <div class="section-header">Section 7. Financial Information</div>
+          
+          <div class="form-group">
+            <label>Please explain your business model and how you do/will make money? <span class="required">*</span></label>
+            <textarea id="businessModel" required></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Do you have any revenue? <span class="required">*</span></label>
+            <select id="hasRevenue" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Have you raised any capital? <span class="required">*</span></label>
+            <select id="raisedCapital" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="fundingDetailsGroup" style="display: none;">
+            <label>How would you characterize the most recent round of funding that you closed? <span class="required">*</span></label>
+            <select id="fundingStage">
+              <option value="">선택</option>
+              <option value="Pre-seed">Pre-seed</option>
+              <option value="Seed">Seed</option>
+              <option value="Series A">Series A</option>
+              <option value="Series B+">Series B or later</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="fundingDateGroup" style="display: none;">
+            <label>Date of most recent funding close <span class="required">*</span></label>
+            <input type="date" id="fundingDate">
+          </div>
+          
+          <div class="form-group" id="totalRaisedGroup" style="display: none;">
+            <label>Total amount raised to date <span class="required">*</span></label>
+            <input type="number" id="totalRaised" placeholder="USD">
+            <div class="helper-text">USD 단위로 입력해주세요.</div>
+          </div>
+          
+          <div class="form-group" id="investorsGroup" style="display: none;">
+            <label>Who are your investors? <span class="required">*</span></label>
+            <textarea id="investors"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Who are your advisors? <span class="required">*</span></label>
+            <textarea id="advisors" required></textarea>
+            <div class="helper-text">자문단이 없다면 "No advisors yet"으로 작성</div>
+          </div>
+          
+          <div class="form-group">
+            <label>Is/was your current startup part of any accelerator(s)/incubator(s)? <span class="required">*</span></label>
+            <select id="accelerator" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="acceleratorNameGroup" style="display: none;">
+            <label>Which accelerator(s)/incubator(s)? <span class="required">*</span></label>
+            <textarea id="acceleratorName"></textarea>
+            <div class="helper-text tip">
+              <strong>신한 스퀘어브릿지 소속 팀:</strong><br>
+              "Shinhan Financial Group Hope Foundation / Shinhan Square Bridge(S²B)"로 작성해주세요.
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Do you plan to raise capital in the next year? <span class="required">*</span></label>
+            <select id="planToRaise" required>
+              <option value="">선택</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section 8: Team Details -->
+        <div class="section">
+          <div class="section-header">Section 8. Team Details</div>
+          
+          <div class="form-group">
+            <label>What experience/expertise makes your team unique to build your product? <span class="required">*</span></label>
+            <textarea id="teamExpertise" required></textarea>
+            <div class="helper-text">팀이 이 문제를 해결하기에 적합한 이유를 설명해주세요.</div>
+          </div>
+          
+          <div class="form-group">
+            <label>How many people are on your team? <span class="required">*</span></label>
+            <input type="number" id="teamSize" required min="1">
+          </div>
+          
+          <div class="form-group">
+            <label>How many founders does the company have? <span class="required">*</span></label>
+            <input type="number" id="founderCount" required min="1" max="10">
+          </div>
+        </div>
+
+        <!-- Section 9: Founder Profile (대표 1명) -->
+        <div class="section">
+          <div class="section-header">Section 9. Founder Profile (대표자)</div>
+          <p class="helper-text" style="margin-bottom: 20px;">대표자 1명의 정보를 입력해주세요. 공동창업자가 있다면 실제 신청 시 추가 입력란이 제공됩니다.</p>
+          
+          <div class="form-group">
+            <label>Full Name <span class="required">*</span></label>
+            <input type="text" id="founderName" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Job Title <span class="required">*</span></label>
+            <input type="text" id="founderTitle" required placeholder="예: CEO, CTO">
+          </div>
+          
+          <div class="form-group">
+            <label>LinkedIn Profile URL <span class="required">*</span></label>
+            <input type="url" id="founderLinkedIn" required placeholder="https://linkedin.com/in/...">
+          </div>
+          
+          <div class="form-group">
+            <label>AngelList or Crunchbase Profile URL</label>
+            <input type="url" id="founderAngelList" placeholder="https://">
+          </div>
+        </div>
+
+        <!-- Section 10: Referral Source -->
+        <div class="section">
+          <div class="section-header">Section 10. How'd you hear about Startup Battlefield?</div>
+          
+          <div class="form-group">
+            <label>Referral Source <span class="required">*</span></label>
+            <select id="referralSource" required>
+              <option value="">선택</option>
+              <option value="Accelerator/Incubator">Accelerator/Incubator</option>
+              <option value="Investor">Investor</option>
+              <option value="Friend">Friend/Colleague</option>
+              <option value="TC Website">TechCrunch Website</option>
+              <option value="Social Media">Social Media</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="form-group" id="referralPersonGroup" style="display: none;">
+            <label>Name of person that referred you <span class="required">*</span></label>
+            <input type="text" id="referralPerson">
+            <div class="helper-text tip">
+              <strong>신한 스퀘어브릿지 소속 팀:</strong> "Sukkun Sun"으로 작성해주세요.
+            </div>
+          </div>
+          
+          <div class="form-group" id="referralOrgGroup" style="display: none;">
+            <label>What organization/company is the person who referred you with? <span class="required">*</span></label>
+            <input type="text" id="referralOrg">
+            <div class="helper-text tip">
+              <strong>신한 스퀘어브릿지 소속 팀:</strong> "Shinhan Financial Group Hope Foundation"으로 작성해주세요.
+            </div>
+          </div>
+          
+          <div class="form-group" id="referralEmailGroup" style="display: none;">
+            <label>Email of person that referred you (if known)</label>
+            <input type="email" id="referralEmail">
+            <div class="helper-text tip">
+              <strong>신한 스퀘어브릿지 소속 팀:</strong> "<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7b1c1714191a173b08491909121f1c1e55181416">[email&#160;protected]</a>"으로 작성해주세요.
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="submit-section">
+          <button type="submit" class="btn-submit">평가 시작하기</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      <h3>AI 심사 중...</h3>
+      <p>TechCrunch 기자 관점에서 신청서를 평가하고 있습니다. 잠시만 기다려주세요.</p>
+    </div>
+
+    <!-- Result State -->
+    <div class="result" id="resultState">
+      <div class="result-header">
+        <h2>평가 완료</h2>
+        <div class="result-score" id="resultScore">0점</div>
+        <div class="result-probability" id="resultProbability">합격 가능성: 0%</div>
+      </div>
+
+      <div class="score-breakdown">
+        <h3 style="margin-bottom: 24px; font-size: 20px;">📊 항목별 점수</h3>
+        <div id="scoreItems"></div>
+      </div>
+
+      <div class="submit-section">
+        <button class="btn-download" onclick="downloadPDF()">📥 PDF 다운로드</button>
+        <button class="btn-restart" onclick="location.reload()">🔄 새로 평가</button>
+      </div>
+    </div>
+  </div>
+
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+    // ==========================================
+    // Configuration
+    // ==========================================
+    const WORKER_URL = 'https://sb200-evaluator.june-27b.workers.dev';
+    const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxuzNJeBu70Od_2rWFuFy8XBUwfUTI5BMrnkvHs-sPVEBbWmi86XRxbqKM5xs51IPVW6g/exec';
+
+    // ==========================================
+    // Character Counter
+    // ==========================================
+    document.getElementById('valueProposition').addEventListener('input', function(e) {
+      const length = e.target.value.length;
+      const counter = document.getElementById('vpCounter');
+      const warning = document.getElementById('vpWarning');
+      
+      counter.textContent = `${length} / 200 characters`;
+      
+      if (length > 200) {
+        counter.classList.add('over-limit');
+        warning.classList.add('show');
+      } else {
+        counter.classList.remove('over-limit');
+        warning.classList.remove('show');
+      }
+    });
+
+    // ==========================================
+    // Competitors Warning
+    // ==========================================
+    document.getElementById('competitors').addEventListener('input', function(e) {
+      const value = e.target.value.toLowerCase();
+      const warning = document.getElementById('competitorsWarning');
+      
+      const hasNoCompetitor = !value || 
+                             value.includes('없') || 
+                             value.includes('none') || 
+                             value.includes('no competitor');
+      
+      if (hasNoCompetitor) {
+        warning.classList.add('show');
+      } else {
+        warning.classList.remove('show');
+      }
+    });
+
+    // ==========================================
+    // TAM Logic Warning
+    // ==========================================
+    document.getElementById('tamLogic').addEventListener('blur', function(e) {
+      const value = e.target.value;
+      const warning = document.getElementById('tamWarning');
+      
+      const hasCalculation = value.includes('×') || 
+                            value.includes('*') || 
+                            value.includes('=') ||
+                            value.includes('assumption') ||
+                            value.includes('가정');
+      
+      if (value.length > 20 && !hasCalculation) {
+        warning.classList.add('show');
+      } else {
+        warning.classList.remove('show');
+      }
+    });
+
+    // ==========================================
+    // Customers Warning
+    // ==========================================
+    document.getElementById('customers').addEventListener('input', function(e) {
+      const value = e.target.value.toLowerCase();
+      const warning = document.getElementById('customersWarning');
+      
+      const hasGlobal = value.includes('global') || 
+                       value.includes('international') ||
+                       value.includes('us ') ||
+                       value.includes('europe');
+      
+      if (value.length > 20 && !hasGlobal) {
+        warning.classList.add('show');
+      } else {
+        warning.classList.remove('show');
+      }
+    });
+
+    // ==========================================
+    // Conditional Fields
+    // ==========================================
+    document.getElementById('patent').addEventListener('change', function(e) {
+      const group = document.getElementById('patentLinkGroup');
+      const input = document.getElementById('patentLink');
+      
+      if (e.target.value === 'Yes' || e.target.value === 'Patent pending') {
+        group.style.display = 'block';
+        input.required = true;
+      } else {
+        group.style.display = 'none';
+        input.required = false;
+      }
+    });
+
+    document.getElementById('newProduct').addEventListener('change', function(e) {
+      const group = document.getElementById('newProductDescGroup');
+      const input = document.getElementById('newProductDesc');
+      
+      if (e.target.value === 'Yes') {
+        group.style.display = 'block';
+        input.required = true;
+      } else {
+        group.style.display = 'none';
+        input.required = false;
+      }
+    });
+
+    document.getElementById('technology').addEventListener('change', function(e) {
+      const group = document.getElementById('aiDetailsGroup');
+      
+      if (e.target.value === 'AI & ML') {
+        group.style.display = 'block';
+      } else {
+        group.style.display = 'none';
+      }
+    });
+
+    document.getElementById('raisedCapital').addEventListener('change', function(e) {
+      const isYes = e.target.value === 'Yes';
+      
+      document.getElementById('fundingDetailsGroup').style.display = isYes ? 'block' : 'none';
+      document.getElementById('fundingDateGroup').style.display = isYes ? 'block' : 'none';
+      document.getElementById('totalRaisedGroup').style.display = isYes ? 'block' : 'none';
+      document.getElementById('investorsGroup').style.display = isYes ? 'block' : 'none';
+      
+      document.getElementById('fundingStage').required = isYes;
+      document.getElementById('fundingDate').required = isYes;
+      document.getElementById('totalRaised').required = isYes;
+      document.getElementById('investors').required = isYes;
+    });
+
+    document.getElementById('accelerator').addEventListener('change', function(e) {
+      const group = document.getElementById('acceleratorNameGroup');
+      const input = document.getElementById('acceleratorName');
+      
+      if (e.target.value === 'Yes') {
+        group.style.display = 'block';
+        input.required = true;
+      } else {
+        group.style.display = 'none';
+        input.required = false;
+      }
+    });
+
+    document.getElementById('referralSource').addEventListener('change', function(e) {
+      const value = e.target.value;
+      const personGroup = document.getElementById('referralPersonGroup');
+      const orgGroup = document.getElementById('referralOrgGroup');
+      const emailGroup = document.getElementById('referralEmailGroup');
+      
+      const personInput = document.getElementById('referralPerson');
+      const orgInput = document.getElementById('referralOrg');
+      
+      if (value === 'Accelerator/Incubator' || value === 'Investor') {
+        personGroup.style.display = 'block';
+        orgGroup.style.display = 'block';
+        emailGroup.style.display = 'block';
+        personInput.required = true;
+        orgInput.required = true;
+      } else if (value === 'Friend') {
+        personGroup.style.display = 'block';
+        orgGroup.style.display = 'none';
+        emailGroup.style.display = 'block';
+        personInput.required = true;
+        orgInput.required = false;
+      } else {
+        personGroup.style.display = 'none';
+        orgGroup.style.display = 'none';
+        emailGroup.style.display = 'none';
+        personInput.required = false;
+        orgInput.required = false;
+      }
+    });
+
+    // ==========================================
+    // Form Submit
+    // ==========================================
+    document.getElementById('applicationForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Collect form data
+      const formData = {
+        pocCompany: document.getElementById('pocCompany').value,
+        pocFirstName: document.getElementById('pocFirstName').value,
+        pocLastName: document.getElementById('pocLastName').value,
+        pocPhone: document.getElementById('pocPhone').value,
+        pocEmail: document.getElementById('pocEmail').value,
+        ccEmail: document.getElementById('ccEmail').value,
+        
+        companyName: document.getElementById('companyName').value,
+        website: document.getElementById('website').value,
+        pitchbookUrl: document.getElementById('pitchbookUrl').value,
+        incorporation: document.getElementById('incorporation').value,
+        hqRegion: document.getElementById('hqRegion').value,
+        country: document.getElementById('country').value,
+        city: document.getElementById('city').value,
+        
+        stage: document.getElementById('stage').value,
+        valueProposition: document.getElementById('valueProposition').value,
+        problem: document.getElementById('problem').value,
+        solution: document.getElementById('solution').value,
+        differentiation: document.getElementById('differentiation').value,
+        customer: document.getElementById('customer').value,
+        useCase: document.getElementById('useCase').value,
+        patent: document.getElementById('patent').value,
+        patentLink: document.getElementById('patentLink').value,
+        distribution: document.getElementById('distribution').value,
+        newProduct: document.getElementById('newProduct').value,
+        newProductDesc: document.getElementById('newProductDesc').value,
+        technology: document.getElementById('technology').value,
+        aiDetails: document.getElementById('aiDetails').value,
+        
+        demoUrl: document.getElementById('demoUrl').value,
+        founderUrl: document.getElementById('founderUrl').value,
+        
+        tam: document.getElementById('tam').value,
+        tamLogic: document.getElementById('tamLogic').value,
+        competitors: document.getElementById('competitors').value,
+        industry: document.getElementById('industry').value,
+        
+        kpi: document.getElementById('kpi').value,
+        customers: document.getElementById('customers').value,
+        traction: document.getElementById('traction').value,
+        press: document.getElementById('press').value,
+        newsworthy: document.getElementById('newsworthy').value,
+        
+        businessModel: document.getElementById('businessModel').value,
+        hasRevenue: document.getElementById('hasRevenue').value,
+        raisedCapital: document.getElementById('raisedCapital').value,
+        fundingStage: document.getElementById('fundingStage').value,
+        fundingDate: document.getElementById('fundingDate').value,
+        totalRaised: document.getElementById('totalRaised').value,
+        investors: document.getElementById('investors').value,
+        advisors: document.getElementById('advisors').value,
+        accelerator: document.getElementById('accelerator').value,
+        acceleratorName: document.getElementById('acceleratorName').value,
+        planToRaise: document.getElementById('planToRaise').value,
+        
+        teamExpertise: document.getElementById('teamExpertise').value,
+        teamSize: document.getElementById('teamSize').value,
+        founderCount: document.getElementById('founderCount').value,
+        
+        founderName: document.getElementById('founderName').value,
+        founderTitle: document.getElementById('founderTitle').value,
+        founderLinkedIn: document.getElementById('founderLinkedIn').value,
+        founderAngelList: document.getElementById('founderAngelList').value,
+        
+        referralSource: document.getElementById('referralSource').value,
+        referralPerson: document.getElementById('referralPerson').value,
+        referralOrg: document.getElementById('referralOrg').value,
+        referralEmail: document.getElementById('referralEmail').value
+      };
+      
+      // Show loading
+      document.getElementById('formContainer').style.display = 'none';
+      document.getElementById('loadingState').classList.add('show');
+      
+      try {
+        // Call Cloudflare Worker
+        const response = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API Error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Save to Google Sheets (background)
+        saveToGoogleSheets(formData, result);
+        
+        // Display result
+        displayResult(result, formData);
+        
+      } catch (error) {
+        alert('평가 중 오류가 발생했습니다: ' + error.message + '\n\n브라우저 콘솔(F12)을 확인해주세요.');
+        document.getElementById('loadingState').classList.remove('show');
+        document.getElementById('formContainer').style.display = 'block';
+      }
+    });
+
+    // ==========================================
+    // Save to Google Sheets
+    // ==========================================
+    async function saveToGoogleSheets(formData, result) {
+      const payload = {
+        timestamp: new Date().toISOString(),
+        formData: formData,  // 신청서 전체 데이터
+        result: result       // 평가 결과 전체
+      };
+      
+      fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {}); // 실패해도 UI에 영향 없음
+    }
+
+    // ==========================================
+    // Display Result
+    // ==========================================
+    function displayResult(result, formData) {
+      document.getElementById('loadingState').classList.remove('show');
+      document.getElementById('resultState').classList.add('show');
+      
+      document.getElementById('resultScore').textContent = result.weightedScore + '점';
+      document.getElementById('resultProbability').textContent = '합격 가능성: ' + result.probability;
+      
+      const scoreItemsHtml = result.itemScores.map(item => `
+        <div class="score-item">
+          <div class="score-item-header">
+            <span class="score-item-title">${item.item}</span>
+            <span class="score-item-value">${item.score}/${item.max}</span>
+          </div>
+          <div class="score-rationale">${item.rationale}</div>
+          ${item.improvement ? `<div class="score-improvement">${item.improvement}</div>` : ''}
+        </div>
+      `).join('');
+      
+      document.getElementById('scoreItems').innerHTML = scoreItemsHtml;
+      
+      // Save for PDF
+      window.evaluationResult = result;
+      window.formData = formData;
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==========================================
+    // PDF Download
+    // ==========================================
+    function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(20);
+      doc.text('Startup Battlefield 200', 20, 20);
+      doc.text('Application Evaluation Result', 20, 30);
+      
+      // Company Info
+      doc.setFontSize(12);
+      doc.text(`Company: ${window.formData.companyName}`, 20, 50);
+      doc.text(`Score: ${window.evaluationResult.weightedScore}/100`, 20, 60);
+      doc.text(`Probability: ${window.evaluationResult.probability}`, 20, 70);
+      
+      // Item Scores
+      let yPos = 90;
+      doc.setFontSize(14);
+      doc.text('Item Scores:', 20, yPos);
+      yPos += 10;
+      
+      doc.setFontSize(11);
+      window.evaluationResult.itemScores.forEach(item => {
+        doc.text(`${item.item}: ${item.score}/${item.max}`, 20, yPos);
+        yPos += 10;
+        
+        const rationaleLines = doc.splitTextToSize(item.rationale, 170);
+        doc.setFontSize(9);
+        doc.text(rationaleLines, 25, yPos);
+        yPos += rationaleLines.length * 5 + 5;
+        
+        if (item.improvement) {
+          const improvementLines = doc.splitTextToSize(`💡 ${item.improvement}`, 170);
+          doc.text(improvementLines, 25, yPos);
+          yPos += improvementLines.length * 5 + 10;
+        }
+        
+        doc.setFontSize(11);
+        
+        // New pag
