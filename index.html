@@ -848,8 +848,8 @@
             <label>Which accelerator(s)/incubator(s)? <span class="required">*</span></label>
             <textarea id="acceleratorName"></textarea>
             <div class="helper-text tip">
-              <strong>신한 스퀘어브릿지 소속 팀:</strong><br>
-              "Shinhan Financial Group Hope Foundation / Shinhan Square Bridge(S²B)"로 작성해주세요.
+              <strong>💡Tip</strong><br>
+              신한금융희망재단 공식 추천을 받는 경우, 입력 정보는 추후 안내드립니다.
             </div>
           </div>
           
@@ -870,7 +870,7 @@
           <div class="form-group">
             <label>What experience/expertise makes your team unique to build your product? <span class="required">*</span></label>
             <textarea id="teamExpertise" required></textarea>
-            <div class="helper-text">팀이 이 문제를 해결하기에 적합한 이유를 설명해주세요.</div>
+            <div class="helper-text">팀이 이 문제를 해결하기에 적합한 이유를 설명합니다.</div>
           </div>
           
           <div class="form-group">
@@ -886,8 +886,9 @@
 
         <!-- Section 9: Founder Profile (대표 1명) -->
         <div class="section">
-          <div class="section-header">Section 9. Founder Profile (대표자)</div>
-          <p class="helper-text" style="margin-bottom: 20px;">대표자 1명의 정보를 입력해주세요. 공동창업자가 있다면 실제 신청 시 추가 입력란이 제공됩니다.</p>
+          <div class="section-header">Section 9. Founder Profile</div>
+          <p class="helper-text" style="margin-bottom: 20px;">대표자 정보를 입력합니다.<br>
+            위 문항에서 창업자 수를 2명 이상으로 답변하면, 실제 Startup Battlefield 신청서에서는 그 수만큼 입력란이 추가됩니다.</p>
           
           <div class="form-group">
             <label>Full Name <span class="required">*</span></label>
@@ -931,7 +932,7 @@
             <label>Name of person that referred you <span class="required">*</span></label>
             <input type="text" id="referralPerson">
             <div class="helper-text tip">
-              <strong>신한 스퀘어브릿지 소속 팀:</strong> "Sukkun Sun"으로 작성해주세요.
+              <strong>💡Tip</strong> 신한금융희망재단 공식 추천을 받는 경우, 입력 정보는 추후 안내드립니다.
             </div>
           </div>
           
@@ -939,7 +940,7 @@
             <label>What organization/company is the person who referred you with? <span class="required">*</span></label>
             <input type="text" id="referralOrg">
             <div class="helper-text tip">
-              <strong>신한 스퀘어브릿지 소속 팀:</strong> "Shinhan Financial Group Hope Foundation"으로 작성해주세요.
+              <strong>💡Tip</strong> 신한금융희망재단 공식 추천을 받는 경우, 입력 정보는 추후 안내드립니다.
             </div>
           </div>
           
@@ -947,7 +948,7 @@
             <label>Email of person that referred you (if known)</label>
             <input type="email" id="referralEmail">
             <div class="helper-text tip">
-              <strong>신한 스퀘어브릿지 소속 팀:</strong> "<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="7b1c1714191a173b08491909121f1c1e55181416">[email&#160;protected]</a>"으로 작성해주세요.
+              <strong>💡Tip</strong>  신한금융희망재단 공식 추천을 받는 경우, 입력 정보는 추후 안내드립니다.
             </div>
           </div>
         </div>
@@ -963,7 +964,7 @@
     <div class="loading" id="loadingState">
       <div class="spinner"></div>
       <h3>AI 심사 중...</h3>
-      <p>TechCrunch 기자 관점에서 신청서를 평가하고 있습니다. 잠시만 기다려주세요.</p>
+      <p>Application screening 단계입니다. 잠시만 기다려주세요.</p>
     </div>
 
     <!-- Result State -->
@@ -971,7 +972,7 @@
       <div class="result-header">
         <h2>평가 완료</h2>
         <div class="result-score" id="resultScore">0점</div>
-        <div class="result-probability" id="resultProbability">합격 가능성: 0%</div>
+        <div class="result-probability" id="resultProbability">선정 가능성: 0%</div>
       </div>
 
       <div class="score-breakdown">
@@ -1339,7 +1340,7 @@
       document.getElementById('resultState').classList.add('show');
       
       document.getElementById('resultScore').textContent = result.weightedScore + '점';
-      document.getElementById('resultProbability').textContent = '합격 가능성: ' + result.probability;
+      document.getElementById('resultProbability').textContent = '선정 가능성: ' + result.probability;
       
       const scoreItemsHtml = result.itemScores.map(item => `
         <div class="score-item">
