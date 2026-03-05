@@ -417,7 +417,13 @@
       margin-left: 12px;
     }
     
-    /* Responsive */
+    @media print {
+      .header { background: #0055FF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .btn-download, .btn-restart, .notice { display: none !important; }
+      .result { display: block !important; }
+      .score-improvement { background: #EFF6FF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { font-size: 13px; }
+    }
     @media (max-width: 768px) {
       .container {
         padding: 16px 12px;
@@ -448,7 +454,7 @@
     
     <div class="header-content">
       <h1>🚀 Startup Battlefield 200 Application Simulator</h1>
-      <p>2026년 서류심사 통과 가능성 평가</p>
+      <p>2026년 스타트업 배틀필드 200팀 선정 가능성 평가</p>
     </div>
   </div>
 
@@ -457,9 +463,9 @@
     <div id="formContainer">
       <div class="notice">
         <strong>⚠️ 시뮬레이터 안내</strong>
-        실제 Startup Battlefield 200 심사는 신청서 내용과 제출한 영상(Product Demo, Founder Video)을 모두 검토하여 진행됩니다.<br>
-        본 시뮬레이터는 <strong>신청서 텍스트 내용만을 기반</strong>으로 평가하므로, 영상은 보유 여부만 확인합니다.<br>
-        평가 결과는 참고용이며, 실제 선정 결과와 다를 수 있습니다.
+        실제 Startup Battlefield 심사는 신청서 내용과 제출한 영상(Product Demo, Founder Video)을 모두 검토하여 진행됩니다.<br>
+        본 시뮬레이터는 선정 가능성을 신청서 내용에 기반해서 확인합니다.<br>
+        따라서 시뮬레이션 결과는 실제 Startup Battlefield 심사 결과와 다를 수 있습니다.
       </div>
 
       <form id="applicationForm">
@@ -980,7 +986,7 @@
       </div>
 
       <div class="submit-section">
-        <button class="btn-download" onclick="downloadPDF()">📥 PDF 다운로드</button>
+        <button class="btn-download" onclick="printResult()">🖨️ 인쇄 / PDF 저장</button>
         <button class="btn-restart" onclick="location.reload()">🔄 새로 평가</button>
       </div>
     </div>
@@ -1367,54 +1373,8 @@
   // ==========================================
   // PDF Download (전역 함수 — load 이벤트 밖)
   // ==========================================
-  function downloadPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Title
-    doc.setFontSize(20);
-    doc.text('Startup Battlefield 200', 20, 20);
-    doc.text('Application Evaluation Result', 20, 30);
-    
-    // Company Info
-    doc.setFontSize(12);
-    doc.text(`Company: ${window.formData.companyName}`, 20, 50);
-    doc.text(`Score: ${window.evaluationResult.weightedScore}/100`, 20, 60);
-    doc.text(`Probability: ${window.evaluationResult.probability}`, 20, 70);
-    
-    // Item Scores
-    let yPos = 90;
-    doc.setFontSize(14);
-    doc.text('Item Scores:', 20, yPos);
-    yPos += 10;
-    
-    doc.setFontSize(11);
-    window.evaluationResult.itemScores.forEach(item => {
-      doc.text(`${item.item}: ${item.score}/${item.max}`, 20, yPos);
-      yPos += 10;
-      
-      const rationaleLines = doc.splitTextToSize(item.rationale, 170);
-      doc.setFontSize(9);
-      doc.text(rationaleLines, 25, yPos);
-      yPos += rationaleLines.length * 5 + 5;
-      
-      if (item.improvement) {
-        const improvementLines = doc.splitTextToSize(`Improvement: ${item.improvement}`, 170);
-        doc.text(improvementLines, 25, yPos);
-        yPos += improvementLines.length * 5 + 10;
-      }
-      
-      doc.setFontSize(11);
-      
-      // New page handling
-      if (yPos > 250) {
-        doc.addPage();
-        yPos = 20;
-      }
-    });
-    
-    // Save
-    doc.save('SB200_Evaluation_Result.pdf');
+  function printResult() {
+    window.print();
   }
   </script>
 </body>
