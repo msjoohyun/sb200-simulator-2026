@@ -481,12 +481,6 @@ input[readonly] {
 .retry-btn{font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:600;color:var(--navy);background:#fff;border:2px solid var(--border);border-radius:10px;padding:12px 28px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s;}
 .retry-btn:hover{border-color:#0055FF;color:#0055FF;}
 .retry-btn svg{width:16px;height:16px;}
-.verdict-rationale-section{background:#F0F4FF;border-left:4px solid var(--blue);border-radius:0 10px 10px 0;padding:16px 20px;margin:0 0 16px;}
-.vr-label{font-size:11px;font-weight:700;color:var(--blue);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
-.vr-text{font-size:14px;line-height:1.7;color:var(--navy);}
-.journalist-note{font-size:13px;color:#666;padding:10px 16px;background:#F8F9FA;border-radius:8px;margin-top:10px;}
-.kr-risks-title{font-size:13px;font-weight:700;color:#B45309;margin:16px 0 6px;}
-.kr-risks-list{margin:0;padding-left:20px;font-size:13px;color:#92400E;line-height:1.8;}
 </style>
 </head>
 <body>
@@ -1265,25 +1259,16 @@ window.addEventListener("load", function () {
     };
   }
 
-  /* Worker JSON 응답 파싱 */
+  /* Worker 응답 텍스트에서 평가 데이터 파싱 */
   function parseEvaluation(raw) {
-    if (typeof raw === "object" && raw !== null && !raw.error && raw.itemScores) {
-      return raw;
+    /* Worker가 JSON 또는 plain text 반환 모두 대응 */
+    var text = "";
+    if (typeof raw === "object") {
+      text = raw.result || raw.evaluation || raw.text || raw.content || JSON.stringify(raw);
+    } else {
+      text = String(raw);
     }
-    try {
-      var parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw));
-      if (parsed && parsed.itemScores) return parsed;
-    } catch (e) {}
-    return { _parseError: true };
-  }
-
-  /* itemScores 배열에서 특정 항목 찾기 */
-  function getItem(ev, keyword) {
-    if (!ev || !ev.itemScores) return { score: null, rationale: "", improvement: "" };
-    var found = ev.itemScores.filter(function(s) {
-      return s.item && s.item.toLowerCase().indexOf(keyword.toLowerCase()) !== -1;
-    })[0];
-    return found || { score: null, rationale: "", improvement: "" };
+    return text;
   }
 
   /* ──────────────────────────────────
@@ -1347,52 +1332,80 @@ window.addEventListener("load", function () {
   }
 
   /* ──────────────────────────────────
-     결과 화면 전체 빌드 (JSON 기반)
+     결과 화면 전체 빌드
   ────────────────────────────────── */
-  function buildResultHTML(fd, ev) {
-    /* ev = Worker JSON 구조체 (parseEvaluation 결과) */
+  function buildResultHTML(fd, evalText) {
+    /* evalText = Worker가 돌려준 평가 전문 텍스트 */
 
-    /* 파싱 오류 fallback */
-    if (!ev || ev._parseError) {
-      return '<div class="result-header"><div class="result-header-meta"><div class="result-header-title">평가 결과 파싱 오류</div><div class="result-header-sub">Worker 응답을 처리할 수 없습니다. 다시 시도해주세요.</div></div></div>';
+    /* Worker 응답에서 각 항목 파싱 (정규식 기반) */
+    function extractSection(pattern) {
+      var m = evalText.match(pattern);
+      return m ? m[1].trim() : "";
     }
 
-    var html = "";
+    /* 합격 가능성 */
+    var verdictRaw = extractSection(/합격\s*가능성[^:：]*[:：]\s*([^\n]+)/);
+    if (!verdictRaw) verdictRaw = extractSection(/(높음|중간|낮음)/);
+    var verdictKo   = verdictRaw.includes("높") ? "높음" : verdictRaw.includes("낮") ? "낮음" : "중간";
+    var verdictCls  = verdictKo === "높음" ? "high" : verdictKo === "낮음" ? "low" : "medium";
 
-    /* ── 점수/verdict 공통 헬퍼 ── */
+    /* 퍼센트 */
+    var pctRaw = extractSection(/(\d{1,3})\s*%/);
+    var pct    = pctRaw ? Math.min(100, Math.max(0, parseInt(pctRaw))) : (verdictKo === "높음" ? 72 : verdictKo === "낮음" ? 25 : 50);
+
+    /* 담당 기자 */
+    var journalistRaw = extractSection(/담당\s*기자[^:：]*[:：]\s*([^\n]+)/);
+    if (!journalistRaw) journalistRaw = extractSection(/(Kate Park|Aisha Malik|Tim De Chant|Zack Whittaker|Anna Heim|Sean O'Kane|Ram Iyer|Lorenzo)[^\n]*/);
+
+    /* 강점/약점/위험 */
+    var strength = extractSection(/강점[^:：]*[:：]\s*([^\n]+)/);
+    var weakness = extractSection(/약점[^:：]*[:：]\s*([^\n]+)/);
+    var risk     = extractSection(/위험[^:：]*[:：]\s*([^\n]+)/);
+
+    /* 항목별 점수 */
+    function getScore(label) {
+      var m = evalText.match(new RegExp(label + "[^\\n]*\\n[^\\n]*점수[^:：]*[:：]\\s*([1-5])"));
+      if (!m) m = evalText.match(new RegExp(label + "[^\\n\\d]*([1-5])\\s*[/／]\\s*5"));
+      return m ? parseInt(m[1]) : null;
+    }
     function scoreCls(n) {
-      if (n === null || n === undefined) return "na";
+      if (n === null) return "na";
       return "s" + n;
     }
     function scoreLbl(n) {
-      return (n !== null && n !== undefined) ? n + " / 5" : "정보 부족";
+      return n !== null ? n + " / 5" : "정보 부족";
     }
 
-    /* ── 합격 가능성 ── */
-    var verdictKo  = ev.verdictKo || "중간";
-    var verdictCls = (verdictKo === "높음" || verdictKo === "매우 높음") ? "high"
-                   : (verdictKo === "낮음" || verdictKo === "매우 낮음") ? "low" : "medium";
-    var pctStr = (ev.probability || "35%").replace("%","").trim();
-    var pct    = Math.min(100, Math.max(0, parseInt(pctStr) || 35));
+    /* 항목별 판단 근거 / 개선 사항 추출 */
+    function extractItemBlock(heading) {
+      var pattern = new RegExp(heading + "[\\s\\S]*?판단\\s*근거[^:：]*[:：]\\s*([\\s\\S]*?)(?=개선\\s*사항|$)");
+      var m = evalText.match(pattern);
+      var reason = m ? m[1].trim().split(/\n\n/)[0] : "(Worker 응답에서 추출 불가)";
+      pattern = new RegExp(heading + "[\\s\\S]*?개선\\s*사항[^:：]*[:：]\\s*([\\s\\S]*?)(?=\\.\\s*\n\n|\n\n[0-9]|$)");
+      m = evalText.match(pattern);
+      var improve = m ? m[1].trim().split(/\n\n/)[0] : "(Worker 응답에서 추출 불가)";
+      return { reason: reason, improve: improve };
+    }
 
-    /* ── 담당 기자 ── */
-    var aj      = ev.assignedJournalist || {};
-    var primary = aj.primary || "Kate Park";
-    var secondary = aj.secondary || "";
-    var jNote   = aj.journalistNote || "";
+    var sec3  = extractItemBlock("Problem.*Solution|Why Now");
+    var sec4  = extractItemBlock("Product Demo");
+    var sec5t = extractItemBlock("TAM|Market.*TAM");
+    var sec5c = extractItemBlock("Competition|경쟁");
+    var sec6  = extractItemBlock("Traction");
+    var sec7  = extractItemBlock("Business Model|Financial");
+    var sec8  = extractItemBlock("Team");
 
-    /* ── 항목별 점수 ── */
-    var s3  = getItem(ev, "Problem");
-    var s4  = getItem(ev, "Demo");
-    var s5t = getItem(ev, "TAM");
-    var s5c = getItem(ev, "Competition");
-    var s6  = getItem(ev, "Traction");
-    var s7  = getItem(ev, "Business Model");
-    var s8  = getItem(ev, "Team");
+    var score3  = getScore("Problem|Why Now");
+    var score4  = getScore("Product Demo");
+    var score5t = getScore("TAM");
+    var score5c = getScore("Competition|경쟁");
+    var score6  = getScore("Traction");
+    var score7  = getScore("Business Model");
+    var score8  = getScore("Team");
 
-    /* ── SVG 아이콘 ── */
+    /* ── 헤더 ── */
     var headerSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>';
-    var personSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
+    var html = "";
 
     /* ① 결과 헤더 */
     html += '<div class="result-header">';
@@ -1403,7 +1416,7 @@ window.addEventListener("load", function () {
     html += '  </div>';
     html += '  <div class="verdict-badge">';
     html += '    <span class="verdict-label">합격 가능성</span>';
-    html += '    <span class="verdict-pill ' + verdictCls + '">' + esc(verdictKo) + '</span>';
+    html += '    <span class="verdict-pill ' + verdictCls + '">' + verdictKo + '</span>';
     html += '  </div>';
     html += '</div>';
 
@@ -1415,143 +1428,186 @@ window.addEventListener("load", function () {
     html += '</div>';
 
     /* ③ 담당 기자 */
+    var journalistHtml = journalistRaw
+      ? '<strong>예상 담당 기자:</strong> ' + esc(journalistRaw)
+      : '<strong>예상 담당 기자:</strong> 산업 분류 및 국가를 기준으로 담당 기자가 배정됩니다.';
+    var personSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>';
     html += '<div class="journalist-section">';
-    html += '  <div class="journalist-strip">' + personSvg + '<div class="journalist-strip-text"><strong>예상 담당 기자:</strong> ' + esc(primary) + (secondary ? ' / ' + esc(secondary) : '') + '</div></div>';
+    html += '  <div class="journalist-strip">' + personSvg + '<div class="journalist-strip-text">' + journalistHtml + '</div></div>';
     html += '  <div class="reporter-wrap">';
+    /* Kate Park 고정 + 산업별 두 번째 기자 */
     html += buildReporterCard("KP", "Kate Park", "Asian Startups · TechCrunch", ["한국 스타트업", "아시아 시장"], ["K-tech", "Seoul"], true);
-    if (secondary && secondary !== "Kate Park") {
-      var initials = secondary.split(" ").map(function(w){return w[0];}).join("").toUpperCase().slice(0,2);
-      html += buildReporterCard(initials, secondary, aj.focus || "TechCrunch", [aj.focus || "Industry"], [], false);
-    }
+    /* 산업별 기자 */
+    var industry = (fd.industry || "").toLowerCase();
+    var r2 = getSecondReporter(industry, fd.tech_type || "");
+    html += buildReporterCard(r2.initials, r2.name, r2.role, r2.match, r2.keywords, false);
     html += '  </div>';
-    if (jNote) {
-      html += '  <div class="journalist-note">' + esc(jNote) + '</div>';
-    }
     html += '</div>';
 
-    /* ④ 총평 */
-    if (ev.verdictRationale) {
-      html += '<div class="verdict-rationale-section">';
-      html += '  <div class="vr-label">심사위원 총평</div>';
-      html += '  <div class="vr-text">' + esc(ev.verdictRationale) + '</div>';
-      html += '</div>';
-    }
+    /* ── SEC 01 ── */
+    var s01body = submittedBlock([
+      sRow("POC Company Name *", fd.poc_company),
+      sGrid([
+        sRow("POC First Name *", fd.poc_first),
+        sRow("POC Last Name *",  fd.poc_last),
+        sRow("POC Phone *",      fd.poc_phone),
+        sRow("POC Email *",      fd.poc_email)
+      ]),
+      fd.poc_cc ? sRow("CC Email", fd.poc_cc) : sRow("CC Email", "", "blank")
+    ].join(""));
+    s01body += evalBlock("reason", "SEC 01은 심사 평가 항목이 아니며 본 시뮬레이션 점수에 반영되지 않았습니다. TC 내부에서 신청서 접수 및 커뮤니케이션 담당자를 확인하기 위한 행정 정보입니다.");
+    s01body += evalBlock("improve", "POC는 신청 전 과정을 실시간으로 대응할 수 있는 담당자로 지정할 것. TC의 추가 자료 요청이나 인터뷰 연락에 24시간 내 회신이 권장된다. CC 이메일에는 공동 창업자나 PR 담당자를 추가해 중요 연락을 놓치는 리스크를 줄여라.");
+    html += detailSection("SEC 01", "Application Point of Contact", "평가 미반영", "na", "N/A", s01body);
 
-    /* ⑤ SEC 03 — Problem & Solution */
-    html += detailSection("SEC 03", "Problem & Solution / Why Now", "",
-      scoreCls(s3.score), scoreLbl(s3.score),
-      submittedBlock(
-        sRow("Value Proposition", fd.val_prop) +
-        sRow("핵심 문제", fd.core_problem) +
-        sRow("솔루션", fd.core_solution) +
-        sRow("Newsworthy Story", fd.newsworthy)
-      ),
-      evalBlock("reason",  s3.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s3.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 02 ── */
+    var s02body = submittedBlock([
+      sGrid([
+        sRow("Company Name *",   fd.co_name),
+        sRow("Website URL *",    fd.co_website),
+        fd.co_crunchbase ? sRow("Crunchbase / Pitchbook URL", fd.co_crunchbase) : sRow("Crunchbase / Pitchbook URL", "", "blank"),
+        sRow("Date of Incorporation *", fd.co_incorp),
+        sRow("HQ Region *",      fd.co_region),
+        sRow("HQ Country *",     fd.co_country, "auto"),
+        sRow("HQ City *",        fd.co_city,    "auto")
+      ])
+    ].join(""));
+    s02body += evalBlock("reason", "Company Name·HQ 지역·설립일은 기자가 산업 분류 및 담당 기자 배정 시 참조하는 정보로 간접 반영됩니다. HQ Country/City는 시뮬레이터 고정값으로 자동 설정됩니다.");
+    s02body += evalBlock("improve", "Crunchbase/Pitchbook 프로필이 없다면 지금 만들어 최신 투자·팀·제품 정보를 기재하라. 웹사이트 URL은 영문 랜딩페이지가 있어야 하며 https:// 접속 속도를 반드시 점검할 것.");
+    html += detailSection("SEC 02", "Company Information", "평가 부분 반영", "ref", "참고", s02body);
 
-    /* ⑥ SEC 04 — Product Demo */
-    html += detailSection("SEC 04", "Product Demo & Founder Intro Video", "",
-      scoreCls(s4.score), scoreLbl(s4.score),
-      submittedBlock(
-        sRow("Demo Video URL", fd.demo_url || "미제출", fd.demo_url ? "normal" : "sim") +
-        sRow("Founder Intro Video URL", fd.intro_url || "미제출", fd.intro_url ? "normal" : "sim")
-      ),
-      evalBlock("reason",  s4.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s4.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 03 ── */
+    var s03rows = [
+      sRow("Product Stage *",          fd.stage),
+      divider(),
+      sRow("Value Proposition (200자) *", fd.val_prop),
+      sRow("Core Problem *",           fd.core_problem),
+      sRow("Solution *",               fd.core_solution),
+      sRow("Ideal Customer *",         fd.ideal_customer),
+      sRow("Primary Use Case *",       fd.use_case),
+      divider(),
+      sGrid([
+        sRow("Patent *",    fd.patent),
+        (fd.patent === "Yes" || fd.patent === "Patent pending")
+          ? (fd.patent_url ? sRow("Patent URL", fd.patent_url) : sRow("Patent URL", "URL 미제출", "sim"))
+          : sRow("Patent URL", "해당 없음")
+      ]),
+      divider(),
+      sRow("Go-to-Market / Distribution *", fd.distribution),
+      sGrid([
+        sRow("Launching at Disrupt? *", fd.launch),
+        fd.launch === "Yes" ? sRow("Launch Detail", fd.launch_detail) : sRow("Launch Detail", "해당 없음")
+      ]),
+      divider(),
+      sRow("Primary Technology *", fd.tech_type),
+      fd.tech_type && fd.tech_type.startsWith("Artificial")
+        ? sRow("Proprietary AI Approach *", fd.ai_proprietary)
+        : ""
+    ].join("");
+    var s03body = submittedBlock(s03rows);
+    s03body += evalBlock("reason", sec3.reason || "(평가 내용을 Worker 응답에서 불러옵니다)");
+    s03body += evalBlock("improve", sec3.improve || "(개선 사항을 Worker 응답에서 불러옵니다)");
+    html += detailSection("SEC 03", "Product Details — Problem & Solution (Why Now)", "", scoreCls(score3), scoreLbl(score3), s03body);
 
-    /* ⑦ SEC 05 — TAM */
-    html += detailSection("SEC 05", "Market — TAM", "",
-      scoreCls(s5t.score), scoreLbl(s5t.score),
-      submittedBlock(
-        sRow("TAM 설명 및 계산 근거", fd.tam_explanation) +
-        sRow("Industry", fd.industry)
-      ),
-      evalBlock("reason",  s5t.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s5t.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 04 ── */
+    var s04rows = [
+      sRow("Product Demo Video URL (Max 2 min) *", fd.demo_url || "", "sim"),
+      sRow("Founder Intro Video URL (Max 1 min) *", fd.intro_url || "", "sim")
+    ].join("");
+    var s04body = submittedBlock(s04rows);
+    s04body += evalBlock("reason", (sec4.reason || "두 영상 URL은 시뮬레이션에서 미제출이므로 URL 자체는 평가에 반영되지 않았습니다. 텍스트 기반 내용을 기준으로 평가합니다."));
+    s04body += evalBlock("improve", (sec4.improve || "두 URL 모두 비밀번호 없이 접근 가능해야 함 (YouTube unlisted 권장). 2026 신청서는 Founder Intro Video로 변경됐다 — Intro 1분은 개인 스토리 중심으로 구성하라."));
+    html += detailSection("SEC 04", "Product & Founder Videos — Product Demo", "", scoreCls(score4), scoreLbl(score4), s04body);
 
-    /* ⑧ SEC 05 — Competition */
-    html += detailSection("SEC 05", "Competition Analysis", "",
-      scoreCls(s5c.score), scoreLbl(s5c.score),
-      submittedBlock(
-        sRow("경쟁사", fd.competitors) +
-        sRow("차별점 및 해자", fd.unique_protectable)
-      ),
-      evalBlock("reason",  s5c.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s5c.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 05 TAM ── */
+    var s05trows = [
+      sRow("TAM Explanation *", fd.tam_explanation),
+      sRow("Primary Industry *", fd.industry)
+    ].join("");
+    var s05tbody = submittedBlock(s05trows);
+    s05tbody += evalBlock("reason", sec5t.reason || "(평가 내용을 Worker 응답에서 불러옵니다)");
+    s05tbody += evalBlock("improve", sec5t.improve || "(개선 사항을 Worker 응답에서 불러옵니다)");
+    html += detailSection("SEC 05", "Market Details — TAM", "", scoreCls(score5t), scoreLbl(score5t), s05tbody);
 
-    /* ⑨ SEC 06 — Traction */
-    html += detailSection("SEC 06", "Traction", "",
-      scoreCls(s6.score), scoreLbl(s6.score),
-      submittedBlock(
-        sRow("핵심 KPI", fd.kpi) +
-        sRow("트랙션 설명", fd.traction_desc) +
-        sRow("고객사", fd.customers) +
-        sRow("언론 보도", fd.press)
-      ),
-      evalBlock("reason",  s6.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s6.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 05 Competition ── */
+    var s05crows = [
+      sRow("Competitors *",              fd.competitors),
+      sRow("Unique & Protectable Advantage *", fd.unique_protectable)
+    ].join("");
+    var s05cbody = submittedBlock(s05crows);
+    s05cbody += evalBlock("reason", sec5c.reason || "(평가 내용을 Worker 응답에서 불러옵니다)");
+    s05cbody += evalBlock("improve", sec5c.improve || "(개선 사항을 Worker 응답에서 불러옵니다)");
+    html += detailSection("SEC 05", "Market Details — Competition", "", scoreCls(score5c), scoreLbl(score5c), s05cbody);
 
-    /* ⑩ SEC 07 — Business Model */
-    html += detailSection("SEC 07", "Business Model", "",
-      scoreCls(s7.score), scoreLbl(s7.score),
-      submittedBlock(
-        sRow("수익 모델", fd.biz_model) +
-        sRow("Revenue Stage", fd.revenue) +
-        sRow("총 투자 유치", fd.total_raised) +
-        sRow("투자자", fd.investors)
-      ),
-      evalBlock("reason",  s7.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s7.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 06 ── */
+    var s06rows = [
+      sRow("KPI *",                  fd.kpi),
+      sRow("Traction Description *", fd.traction_desc),
+      sRow("Customer List",          fd.customers || "미입력"),
+      sRow("Press / Media *",        fd.press),
+      sRow("Newsworthy Story *",     fd.newsworthy)
+    ].join("");
+    var s06body = submittedBlock(s06rows);
+    s06body += evalBlock("reason", sec6.reason || "(평가 내용을 Worker 응답에서 불러옵니다)");
+    s06body += evalBlock("improve", sec6.improve || "(개선 사항을 Worker 응답에서 불러옵니다)");
+    html += detailSection("SEC 06", "Traction", "", scoreCls(score6), scoreLbl(score6), s06body);
 
-    /* ⑪ SEC 08 — Team */
-    html += detailSection("SEC 08", "Team", "",
-      scoreCls(s8.score), scoreLbl(s8.score),
-      submittedBlock(
-        sRow("팀 전문성", fd.team_expertise) +
-        sRow("팀 규모", fd.team_size)
-      ),
-      evalBlock("reason",  s8.rationale   || "판단 근거 없음") +
-      evalBlock("improve", s8.improvement || "개선 사항 없음"),
-      ""
-    );
+    /* ── SEC 07 ── */
+    var s07rows = [
+      sRow("Business Model *", fd.biz_model),
+      sRow("Revenue Stage *",  fd.revenue),
+      divider(),
+      sGrid([
+        sRow("Capital Raised *",    fd.capital),
+        fd.capital === "Yes" ? sRow("Most Recent Funding Date", fd.funding_date) : sRow("Most Recent Funding Date", "해당 없음"),
+        sRow("Funding Round *",     fd.funding_round),
+        sRow("Total Raised *",      fd.total_raised)
+      ]),
+      sRow("Investors",  fd.investors  || "미입력"),
+      sRow("Advisors",   fd.advisors   || "미입력"),
+      divider(),
+      sGrid([
+        sRow("Accelerator / Incubator *", fd.accel),
+        fd.accel === "Yes" ? sRow("Accelerator Name", fd.accel_name) : sRow("Accelerator Name", "해당 없음")
+      ])
+    ].join("");
+    var s07body = submittedBlock(s07rows);
+    s07body += evalBlock("reason", sec7.reason || "(평가 내용을 Worker 응답에서 불러옵니다)");
+    s07body += evalBlock("improve", sec7.improve || "(개선 사항을 Worker 응답에서 불러옵니다)");
+    html += detailSection("SEC 07", "Financial Information — Business Model", "", scoreCls(score7), scoreLbl(score7), s07body);
 
-    /* ⑫ Key Findings */
-    var strengths  = ev.topStrengths  || [];
-    var weaknesses = ev.topWeaknesses || [];
-    var risks      = ev.topRisks      || [];
-    var krRisks    = ev.koreanTeamRisks || [];
+    /* ── SEC 08 ── */
+    var s08rows = [
+      sRow("Team Expertise *", fd.team_expertise),
+      sGrid([
+        sRow("Team Size *",     fd.team_size),
+        sRow("Founder Count",  fd.founder_count || "", "sim")
+      ]),
+      sRow("Founder Profile", "실제 신청서에서는 창업자별 이름·직책·LinkedIn·성별·인종 정보를 각각 입력", "sim")
+    ].join("");
+    var s08body = submittedBlock(s08rows);
+    s08body += evalBlock("reason", (sec8.reason || "(평가 내용을 Worker 응답에서 불러옵니다)") + " Founder Count 및 창업자 개인 프로필은 시뮬레이션에서 미반영이며, 실제 신청서에서는 TC 다양성 통계(Diversity Stats) 집계에도 활용됩니다.");
+    s08body += evalBlock("improve", (sec8.improve || "(개선 사항을 Worker 응답에서 불러옵니다)") + " 실제 제출 시 각 창업자의 LinkedIn URL과 Founder Profile을 반드시 입력하고 LinkedIn 프로필을 최신 상태로 점검하라.");
+    html += detailSection("SEC 08", "Team Details — Team", "", scoreCls(score8), scoreLbl(score8), s08body);
 
+    /* ── SEC 09 ── */
+    var s09rows = sRow("Nomination Source *", fd.referral || "Shinhan Square Bridge (S²B)", "auto");
+    var s09body = submittedBlock(s09rows);
+    s09body += evalBlock("reason", "SEC 09는 심사 평가 항목이 아니며 본 시뮬레이션 점수에 반영되지 않았습니다. Nomination Source는 신청 유입 경로 확인용 행정 정보입니다.");
+    s09body += evalBlock("improve", "2024년 BANF(Top 20 선정) 인사이트에 따르면 가속기·인큐베이터 + SB 동문 추천 채널이 선정율에 유의미한 영향을 미칩니다. S²B를 통한 공식 추천이 확정되면 해당 경로를 반드시 기재하고, 레퍼런스 담당자 정보(Sukkun Sun / global@s2bridge.com)를 사전에 준비해두세요.");
+    html += detailSection("SEC 09", "How'd you hear about Startup Battlefield?", "평가 미반영", "na", "N/A", s09body);
+
+    /* ── 핵심 판단 요약 (마지막) ── */
     html += '<div class="key-findings">';
-    html += '  <div class="kf-title">Key Findings</div>';
-    html += '  <div class="kf-grid">';
-    html += buildFinding("ok",   "강점", strengths.join(" / ")  || "—");
-    html += buildFinding("warn", "약점", weaknesses.join(" / ") || "—");
-    html += buildFinding("bad",  "위험", risks.join(" / ")      || "—");
-    html += '  </div>';
-    if (krRisks.length) {
-      html += '  <div class="kr-risks-title">🇰🇷 한국팀 특화 리스크</div>';
-      html += '  <ul class="kr-risks-list">' + krRisks.map(function(r){ return '<li>' + esc(r) + '</li>'; }).join("") + '</ul>';
-    }
+    html += buildFinding("ok",   "강점", strength || "Worker 응답에서 강점을 확인하세요");
+    html += buildFinding("warn", "약점", weakness || "Worker 응답에서 약점을 확인하세요");
+    html += buildFinding("bad",  "위험", risk     || "Worker 응답에서 위험 요소를 확인하세요");
     html += '</div>';
 
-    /* ⑬ 재실행 버튼 */
+    /* 재실행 버튼 */
     var retrySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>';
     html += '<div class="result-retry"><button class="retry-btn" id="retry-btn">' + retrySvg + '신청서 다시 작성하기</button></div>';
 
     return html;
-  }
   }
 
   /* 기자 카드 빌드 */
@@ -1594,7 +1650,7 @@ window.addEventListener("load", function () {
   document.getElementById("submit-btn").addEventListener("click", async function () {
     /* 필수 필드 간단 체크 */
     var required = ["poc_company","poc_first","poc_last","poc_phone","poc_email","co_name","co_website","co_incorp","val_prop","core_problem","core_solution","ideal_customer","use_case","distribution","tam_explanation","competitors","unique_protectable","kpi","traction_desc","press","newsworthy","biz_model","total_raised","team_expertise"];
-    var missing = required.filter(function(id){ var el = document.getElementById(id); return !el || !el.value || !el.value.trim(); });
+    var missing = required.filter(function(id){ return !document.getElementById(id) || !document.getElementById(id).value.trim(); });
     if (missing.length > 0) {
       var first = document.getElementById(missing[0]);
       if (first) first.scrollIntoView({behavior:"smooth", block:"center"});
@@ -1676,8 +1732,8 @@ window.addEventListener("load", function () {
         return { text: await resp.text() };
       });
 
-      var ev = parseEvaluation(rawData);
-      var resultHTML = buildResultHTML(fd, ev);
+      var evalText = parseEvaluation(rawData);
+      var resultHTML = buildResultHTML(fd, evalText);
 
       /* 결과 화면 표시, 폼 영역 숨김 */
       document.getElementById("result-area").innerHTML = resultHTML;
@@ -1698,7 +1754,8 @@ window.addEventListener("load", function () {
       });
 
     } catch (err) {
-      alert("오류: " + err.message + "\n\n" + (err.stack ? err.stack.split("\n").slice(0,4).join("\n") : ""));
+      console.error("SIM ERROR:", err);
+      alert("오류: " + err.message);
     } finally {
       stopLoadingAnim();
     }
