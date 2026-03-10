@@ -1698,7 +1698,7 @@ window.addEventListener("load", function () {
       });
 
     } catch (err) {
-      alert("시뮬레이션 중 오류가 발생했습니다: " + err.message);
+      alert("오류: " + err.message + "\n\n" + (err.stack ? err.stack.split("\n").slice(0,4).join("\n") : ""));
     } finally {
       stopLoadingAnim();
     }
